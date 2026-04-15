@@ -6,9 +6,20 @@ const mdColor = "#e7ae34"
 const usColor = "#2b2bb0"
 
 // 1. ACCESS DATA *******************************
+// step 1 is to access the data, which we do using d3.csv to read in the CSV file and then we can use the data in our code to create the visualization
 const data = await d3.csv("data/3party-data.csv")
 
 // 2. DRAW CANVAS  *******************************
+// step 2 does three main things: 
+  // it defines the margins and dimensions for the chart area
+  // it uses creates the SVG canvas based on those dimensions and margins
+  // and it appends a group element to the SVG that will hold all the parts of the chart together and translates it to account for the margins 
+  // we use these tools: 
+    // .select to select elements
+    // .attr to set attributes on the SVG and group elements using "width", "height" and "transform"
+    // .append to create new elements and add them to the SVG
+    // .classed to add classes to the elements for styling purposes
+
 // define margins and dimensions for the chart area
  const margin = {
    top: 50,
@@ -36,6 +47,19 @@ const data = await d3.csv("data/3party-data.csv")
    .attr("transform", `translate(${margin.left}, ${margin.top})`)
 
 // 3. CREATE X AXIS *******************************
+// step 3 has two main parts: 
+  // we create the x axis scale based on the election year 
+  // and then we append the x axis to the chart and add a label for it
+  // we use these tools: 
+    // .scaleBand to create a band scale for the x axis since our data is categorical (election years)
+    // .domain to set the domain of the x scale based on the election years from our data
+    // .range to set the range of the x scale to be the width of the chart area
+    // .padding to add some padding between the bars
+    // .append to create a group element for the x axis and add it to the chart
+    // .attr to set attributes on the group element for positioning and styling using "transform", "text", "fill", "font-size", "x" and "y"
+    // .classed to add a class to the group element for styling purposes
+    // .call with d3.axisBottom to create the x axis based on the x scale we defined
+
 // create x axis scale based on election year
  const xScale = d3
     // use band scale for x axis since data is categorical (election years)
@@ -67,6 +91,18 @@ const data = await d3.csv("data/3party-data.csv")
        .text("Election Year")
 
 // 4. CREATE Y AXIS *******************************
+// step 4 is similar to step 3 but for the y axis: 
+  // we create the y axis scale based on the percent of vote share for 3rd party candidates
+  // and then we append the y axis to the chart and add a label for it
+  // we use these tools: 
+    // .scaleLinear to create a linear scale for the y axis since our data is numerical (percentages)
+    // .domain and d3.max to set the domain of the y scale from 0 to the maximum percent of vote share for 3rd party candidates (with some padding, which we can do by just setting the max to 20 since the maximum is around 15)
+    // .range to set the range of the y scale to be the height of the chart area with 0 at the bottom and max value at the top
+    // .append to create a group element for the y axis and add it to the chart
+    // .attr to set attributes on the group element for positioning and styling using "transform", "text", "fill", "font-size", "x" and "y"
+    // .classed to add a class to the group element for styling purposes
+    // .call with d3.axisLeft to create the y axis based on the y scale we defined and customize it with tick values and tick format
+
 // create y axis scale based on percent of vote share for 3rd party candidates
 const yScale = d3
   // use linear scale for y axis since data is numerical (percentages)
@@ -111,6 +147,16 @@ const yAxis = chart
       .text("Percent of popular vote to 3rd Party")
 
 // 5. DRAW DATA    *******************************
+// step 5 has two main parts: 
+  // we create bars for the Maryland vote share 
+  // and then we create bars for the U.S. vote share
+  // we use these tools: .selectAll to select elements (in this case we start with an empty selection since we haven't created any bars yet)
+  // .data to bind the data to the selection
+  // .join to create new rectangle elements for each data point and bind the data to those elements
+  // .classed to add classes to the bars for styling purposes
+  // .attr to set attributes on the bars for positioning, sizing and coloring based on the data and scales using "x", "y", "width", "height", "fill"
+  // .opacity to set the opacity of the bars
+
 // create bars for md vote share using empty selection and join method
 const mdBars = chart.selectAll(".bar")
   // .data binds the data to the selection
@@ -151,6 +197,22 @@ const usBars = chart.selectAll(".bar2")
   .attr("id", d => `usBar-${d.election}`)
 
 // 6. ADD INTERACTIVITY  *******************************
+// step 6 has two main parts: 
+  // we create a tooltip element that will show information about the bar when you hover over it 
+  // and we add event listeners to the bars to create the interactivity for the tooltip. 
+  // we use these tools: 
+    // let to define null variable for the tooltip data that we will use to populate the tooltip when we hover over a bar
+    // functions to filter the data for the tooltip and to position the tooltip based on the mouse event
+      // defining a function works like this: you give the function a name and then you define the parameters that it takes in (which are like the variables that you use inside the function) and then you write the code for what the function does inside curly braces
+    // ? operator to conditionally set values based on the type of bar that is hovered over (md or us)
+    // === operator to compare values (like checking if the bar type is "mdBar" or "usBar")
+    // ... spread operator to combine the selections for the md and us bars so we can add event listeners to all of them at once
+    // .select to select the tooltip element
+    // .style to set styles on the tooltip for positioning and appearance using "position", "background", "color", "z-index", "display", "padding", "border" and "drop-shadow"
+    // .html to set the content of the tooltip based on the data for the bar that was hovered over
+    // .on to add event listeners for mouseover, mousemove and mouseout to show, position and hide the tooltip when you interact with the bars
+    // .attr to change the opacity of the bars when you hover over them to highlight them using "opacity"
+    
 // create tooltip element and set its initial styles
 // tooltip is a div that will show information about the bar when you hover over it and we style it to look like a little info box that appears next to the cursor
 let tooltipData = null
@@ -245,6 +307,21 @@ d3.selectAll([...mdBars.nodes(), ...usBars.nodes()])
 
 // 7. ANNOTATIONS   *******************************
 // Based on this custom annotations library: https://d3-annotation.susielu.com/
+// step 7 is to add an annotation to highlight Ross Perot's performance in Maryland in 1992 by:
+  // defining the annotation with the text we want to show and the coordinates for where we want to point to on the chart
+  // creating the annotation generator using the d3-svg-annotation library and passing in our annotation definition
+  // appending a group element to the chart for the annotations and calling the annotation generator to create the annotation
+  // we use these tools: 
+    // an array we've called annotations to define the annotation with:
+      // "note" for the text box that appears with the annotation, where we can set the title, label and wrap for the text
+      // "connector" for the line that connects the note to the specific point on the chart that it's referring to, where we can set the type of line and how it points to the chart
+      // "color" to set the color of the annotation elements (like the connector line and the text)
+      // "x" and "y" for the coordinates of the point on the chart that the annotation is referring to
+      // "dx" and "dy" for the offsets of the note (text box) from the point on the chart, so we can position it nicely without overlapping with the bar or other elements
+    // .append to create a group element for the annotations and add it to the chart
+    // .call to call the annotation generator and create the annotation based on our definition
+    // .attr to set attributes on the group element for styling purposes, like "z-index" to make sure it appears above or below other elements as needed
+    
 // annotation to highlight Ross Perot's performance in Maryland in 1992
 const annotations = [
   // "note" is the text box that appears with the annotation 
@@ -286,6 +363,14 @@ chart.append("g")
   .attr("z-index", "-1")
 
 // 8. LEGEND  *******************************
+// step 8 is to create a legend to indicate which color corresponds to Maryland and which color corresponds to the U.S. by:
+  // appending a group element to the SVG for the legend and positioning it in the top left corner
+  // adding a rectangle and text for each item in the legend, using the same colors as the bars in the chart to indicate which color corresponds to which geography
+  // we use these tools: 
+    // .append to create a group element for the legend and add it to the SVG and to create rectangles and text elements for each item in the legend
+    // .classed to add a class to the legend group element for styling purposes
+    // .attr to set attributes on the legend group element for positioning and on the rectangles and text for styling and layout using "transform", "x", "y", "width", "height", "fill" and "text"
+
 // create a legend by first appending a group element to the SVG 
 const legend = svg.append("g")
   .classed("legend", true)
