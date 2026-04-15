@@ -27,8 +27,10 @@ const data = await d3.csv("data/3party-data.csv")
    .attr("height", height + margin.top + margin.bottom)
 
 // append a group element to the SVG and translate it to account for margins
+// a group element is like a container that holds all the parts of the axis together, so we can style and position it as a single unit
  const chart = svg.append("g")
-   // add a class to the group element for styling purposes
+   // .classed literally just means "add this class to the element", so we can style it with CSS later if we want
+   // you would call it by using .chart in the CSS file
    .classed("chart", true)
    // translate the group element to create a margin around the chart area
    .attr("transform", `translate(${margin.left}, ${margin.top})`)
@@ -39,6 +41,7 @@ const data = await d3.csv("data/3party-data.csv")
     // use band scale for x axis since data is categorical (election years)
    .scaleBand()
    // set domain of x scale to be election years from data, converting them to numbers
+   // +d is just a quick way to convert the election year from a string to a number, since it was read in from the CSV as a string but we want to use it as a number for the x scale
    .domain(data.map(d => +d.election))
    // set range of the x scale to be width of chart area, add some padding between bars
    .range([0, width])
@@ -48,6 +51,7 @@ const data = await d3.csv("data/3party-data.csv")
  const xAxis = chart
     // append group element for x axis, translate it to bottom of chart area
    .append("g")
+   // translate here just means move the whole group element down by the height of the chart area, so it lines up with the bottom edge of the chart area
    .attr("transform", `translate(0, ${height})`)
    // add class to the group element for styling purposes
    .classed("x-axis", true)
@@ -65,47 +69,75 @@ const data = await d3.csv("data/3party-data.csv")
 // 4. CREATE Y AXIS *******************************
 // create y axis scale based on percent of vote share for 3rd party candidates
 const yScale = d3
+  // use linear scale for y axis since data is numerical (percentages)
   .scaleLinear()
    .domain([0, d3.max(data, d => +d.p_share_us)])
+  // set domain of y scale to be from 0 to maximum percent of vote share for 3rd party candidates, with some padding
   .domain([0, 20])
+  // set range of y scale to be height of chart area, with 0 at the bottom and max value at the top
+  // the 0 comes last for range because in SVG coordinate system, y values increase as you go down, so we want the maximum value to be at the top of the chart area
   .range([height, 0])
 
 // append y axis to the chart
 const yAxis = chart
+  // append group element for y axis, translate it to left of chart area
   .append("g")
+  // translate works the same as with x axis, but in this case we don't need to move it down since we want it to start at the top of the chart area, so we just set x translation to 0 and y translation to 0
   .attr("transform", `translate(0, 0)`)
+  // add class to the group element for styling purposes
+  // you'd call it in CSS with .y-axis
   .classed("y-axis", true)
   .call(
+    // calling d3.axisLeft with the y scale we defined 
+    // this just creates the y axis based on that scale, and we can customize it by chaining additional methods
     d3.axisLeft(yScale)
+      // set tick values
       .tickValues([0, 5, 10, 15, 20])
+      // format tick labels to only show values that are multiples of 10, and hide the rest by returning an empty string
       .tickFormat(d => d % 10 === 0 ? d : "")
   )
   // add label for y axis
     .append("text")
+      // set text anchor to start so the label is left-aligned
       .attr("text-anchor", "start")
+      // set fill color for label
       .attr("fill", "black")
+      // set font size for label
       .attr("font-size", "1.25em")
+      // position label to the left of the y axis, and slightly above the top of the chart area
       .attr("x", -20)
       .attr("y", -10)
+      // set the text of the label
       .text("Percent of popular vote to 3rd Party")
 
 // 5. DRAW DATA    *******************************
 // create bars for md vote share using empty selection and join method
 const mdBars = chart.selectAll(".bar")
-  // bind data to rectangles, creating a rectangle for each data point
+  // .data binds the data to the selection
+  // the selection is empty at this point, but when we call .join it will create a rectangle element for each data point and bind the data to those elements
   .data(data)
+  // bind the data to rectangle elements, and create a new rectangle for each data point that doesn't have a corresponding element in the selection (which is all of them since the selection is empty)
   .join("rect")
+  // add class to each rectangle for styling purposes
+  // you'd call it in CSS with .mdBar
   .classed("mdBar", true)
   // set x position of each bar based on election year using x scale
   .attr("x", d => xScale(+d.election))
   // set y position of each bar based on md vote share using y scale
   .attr("y", d => yScale(+d.p_share_md))
+  // set width of each bar to be half the bandwidth of the x scale, so the md and us bars can sit side by side
   .attr("width", xScale.bandwidth() / 2)
+  // set height of each bar based on md vote share, which you calculate by taking the difference between the height of the chart area and the y position of the bar 
+  // this is because y position is based on the top of the bar, and we want the height to extend down to the bottom of the chart area
   .attr("height", d => height - yScale(+d.p_share_md))
+  // set fill color for md bars
   .attr("fill", mdColor)
+  // set opacity for md bars so we can see both sets of bars when they overlap
   .attr("opacity", 0.7)
+  // add id to each bar based on election year, which we will use for interactivity later
   .attr("id", d => `mdBar-${d.election}`)
 
+// same process for us vote share bars, but we position them to the right of the md bars by adding half the bandwidth of the x scale to the x position
 const usBars = chart.selectAll(".bar2")
   .data(data)
   .join("rect")
@@ -119,12 +151,20 @@ const usBars = chart.selectAll(".bar2")
   .attr("id", d => `usBar-${d.election}`)
 
 // 6. ADD INTERACTIVITY  *******************************
+// create tooltip element and set its initial styles
+// tooltip is a div that will show information about the bar when you hover over it, and we style it to look like a little info box that appears next to the cursor
 let tooltipData = null
+// this function takes in the data for the bar that was hovered over, and the type of bar (md or us), and filters it to create an object with the specific pieces of information we want to show in the tooltip 
 function filterTooltipData(d, barType) {
+  // we use the barType to determine which vote share to show in the tooltip
   const election = +d.election
+  // we also use the barType to determine which geography to show in the tooltip, and which color to use for the text
+  // this just tells it to print "Maryland" and use the mdColor for the tooltip if it's an mdBar, and to print "United States" and use the usColor if it's a usBar
+  // the ? is just a shorthand for an if statement, so it's saying "if barType is mdBar, then use the md vote share and md color, otherwise use the us vote share and us color"
   const vote_share = barType === "mdBar" ? +d.p_share_md : +d.p_share_us
   const geography = barType === "mdBar" ? "Maryland" : "United States"
   const color = barType === "mdBar" ? mdColor : usColor
+  // we create an object called tooltipData that contains the election year, vote share, geography, and color for the bar that was hovered over, which we will use to populate the tooltip
   tooltipData = {
     election: election,
     vote_share: vote_share,
@@ -133,6 +173,7 @@ function filterTooltipData(d, barType) {
   }
 }
 
+// this function positions the tooltip based on the mouse event, so it follows the cursor as you move it around
 function positionTooltip(event) {
   const [x, y] = d3.pointer(event)
   tooltip
@@ -140,6 +181,9 @@ function positionTooltip(event) {
     .style("top", `${y}px`)
 }
 
+// we select all the bars (both md and us) and add event listeners for mouseover, mousemove, and mouseout to create the interactivity for the tooltip
+// event listeners are just functions that run when a specific event happens, like when you hover over a bar or move your mouse or something
+// all of this code is just saying "when you hover over a bar, run this function that shows the tooltip with the right information, and when you move your mouse, update the position of the tooltip, and when you stop hovering over the bar, hide the tooltip"
 const tooltip = d3.select("#tooltip")
   .data([tooltipData])
   .style("position", "absolute")
