@@ -89,11 +89,11 @@ const yAxis = chart
   .classed("y-axis", true)
   .call(
     // calling d3.axisLeft with the y scale we defined 
-    // this just creates the y axis based on that scale, and we can customize it by chaining additional methods
+    // this just creates the y axis based on that scale and we can customize it by chaining additional methods
     d3.axisLeft(yScale)
       // set tick values
       .tickValues([0, 5, 10, 15, 20])
-      // format tick labels to only show values that are multiples of 10, and hide the rest by returning an empty string
+      // format tick labels to only show values that are multiples of 10 and hide the rest by returning an empty string
       .tickFormat(d => d % 10 === 0 ? d : "")
   )
   // add label for y axis
@@ -104,7 +104,7 @@ const yAxis = chart
       .attr("fill", "black")
       // set font size for label
       .attr("font-size", "1.25em")
-      // position label to the left of the y axis, and slightly above the top of the chart area
+      // position label to the left of the y axis and slightly above the top of the chart area
       .attr("x", -20)
       .attr("y", -10)
       // set the text of the label
@@ -116,7 +116,7 @@ const mdBars = chart.selectAll(".bar")
   // .data binds the data to the selection
   // the selection is empty at this point, but when we call .join it will create a rectangle element for each data point and bind the data to those elements
   .data(data)
-  // bind the data to rectangle elements, and create a new rectangle for each data point that doesn't have a corresponding element in the selection (which is all of them since the selection is empty)
+  // bind the data to rectangle elements and create a new rectangle for each data point that doesn't have a corresponding element in the selection (which is all of them since the selection is empty)
   .join("rect")
   // add class to each rectangle for styling purposes
   // you'd call it in CSS with .mdBar
@@ -128,7 +128,7 @@ const mdBars = chart.selectAll(".bar")
   // set width of each bar to be half the bandwidth of the x scale, so the md and us bars can sit side by side
   .attr("width", xScale.bandwidth() / 2)
   // set height of each bar based on md vote share, which you calculate by taking the difference between the height of the chart area and the y position of the bar 
-  // this is because y position is based on the top of the bar, and we want the height to extend down to the bottom of the chart area
+  // this is because y position is based on the top of the bar and we want the height to extend down to the bottom of the chart area
   .attr("height", d => height - yScale(+d.p_share_md))
   // set fill color for md bars
   .attr("fill", mdColor)
@@ -152,19 +152,19 @@ const usBars = chart.selectAll(".bar2")
 
 // 6. ADD INTERACTIVITY  *******************************
 // create tooltip element and set its initial styles
-// tooltip is a div that will show information about the bar when you hover over it, and we style it to look like a little info box that appears next to the cursor
+// tooltip is a div that will show information about the bar when you hover over it and we style it to look like a little info box that appears next to the cursor
 let tooltipData = null
-// this function takes in the data for the bar that was hovered over, and the type of bar (md or us), and filters it to create an object with the specific pieces of information we want to show in the tooltip 
+// this function takes in the data for the bar that was hovered over and the type of bar (md or us) and filters it to create an object with the specific pieces of information we want to show in the tooltip 
 function filterTooltipData(d, barType) {
   // we use the barType to determine which vote share to show in the tooltip
   const election = +d.election
-  // we also use the barType to determine which geography to show in the tooltip, and which color to use for the text
-  // this just tells it to print "Maryland" and use the mdColor for the tooltip if it's an mdBar, and to print "United States" and use the usColor if it's a usBar
+  // we also use the barType to determine which geography to show in the tooltip and which color to use for the text
+  // this just tells it to print "Maryland" and use the mdColor for the tooltip if it's an mdBar and to print "United States" and use the usColor if it's a usBar
   // the ? is just a shorthand for an if statement, so it's saying "if barType is mdBar, then use the md vote share and md color, otherwise use the us vote share and us color"
   const vote_share = barType === "mdBar" ? +d.p_share_md : +d.p_share_us
   const geography = barType === "mdBar" ? "Maryland" : "United States"
   const color = barType === "mdBar" ? mdColor : usColor
-  // we create an object called tooltipData that contains the election year, vote share, geography, and color for the bar that was hovered over, which we will use to populate the tooltip
+  // we create an object called tooltipData that contains the election year, vote share, geography and color for the bar that was hovered over, which we will use to populate the tooltip
   tooltipData = {
     election: election,
     vote_share: vote_share,
@@ -181,9 +181,9 @@ function positionTooltip(event) {
     .style("top", `${y}px`)
 }
 
-// we select all the bars (both md and us) and add event listeners for mouseover, mousemove, and mouseout to create the interactivity for the tooltip
+// we select all the bars (both md and us) and add event listeners for mouseover, mousemove and mouseout to create the interactivity for the tooltip
 // event listeners are just functions that run when a specific event happens, like when you hover over a bar or move your mouse or something
-// all of this code is just saying "when you hover over a bar, run this function that shows the tooltip with the right information, and when you move your mouse, update the position of the tooltip, and when you stop hovering over the bar, hide the tooltip"
+// all of this code is just saying "when you hover over a bar, run this function that shows the tooltip with the right information and when you move your mouse, update the position of the tooltip and when you stop hovering over the bar, hide the tooltip"
 const tooltip = d3.select("#tooltip")
   .data([tooltipData])
   .style("position", "absolute")
@@ -195,15 +195,29 @@ const tooltip = d3.select("#tooltip")
   .style("border", "1px solid #939393")
   .style("drop-shadow", "0 6px 24px rgba(20, 27, 59, 0.79)")
 
+// this is where we add the event listeners to the bars for the tooltip interactivity
+// we are selecting all the bars (both md and us) by combining their selections with the spread operator and then we add the event listeners for mouseover, mousemove and mouseout
+// the spread operator is the ... in front of the selections and it just takes all the elements from both selections and combines them into one array that we can then select with d3 and add event listeners to
+// the .nodes() just lets us get the actual DOM elements from the d3 selection, so we can combine them with the spread operator and select them all together
 d3.selectAll([...mdBars.nodes(), ...usBars.nodes()])
+  // set cursor to pointer when hovering over the bars to indicate they are interactive
   .attr("cursor", "pointer")
+  // add event listener for mouseover to show tooltip with the right information based on which bar is hovered over
   .on("mouseover", function(event, d) {
+    // we use the "this" keyword to refer to the specific bar that was hovered over, so we can get its class and determine whether it's an mdBar or a usBar
+    // this lets us know which vote share to show in the tooltip and which color and geography to use for the tooltip text
     const targetBar = d3.select(this)
+    // we get the class of the target bar (aka "this" bar) to determine whether it's an mdBar or a usBar, which we will use in the filterTooltipData function 
     const targetBarType = targetBar.attr("class")
 
+    // we call the filterTooltipData function with the data for the bar that was hovered over and the type of bar
+    // this creates the tooltipData object with the specific information we want to show in the tooltip
     filterTooltipData(d, targetBarType)
     tooltip
       .style("display", "block")
+      // we set the HTML content of the tooltip based on the tooltipData object that was created by the filterTooltipData function
+      // contains the election year, vote share, geography and color for the bar that was hovered over
+      // the $ is how we insert the values from the tooltipData object into the HTML string for the tooltip content
       .html(`
         <strong style="color: ${tooltipData.color}; font-weight: bold;">${tooltipData.geography}</strong>
         <br>
@@ -212,13 +226,17 @@ d3.selectAll([...mdBars.nodes(), ...usBars.nodes()])
         Vote Share: ${tooltipData.vote_share}%
       `)
 
+    // we call the positionTooltip function to position the tooltip based on the mouse event, so it appears next to the cursor when you hover over a bar
     positionTooltip(event)
 
+    // we also set the opacity of the target bar to 1 when you hover over it, so it's clearly highlighted and stands out from the other stuff
     targetBar.attr("opacity", 1)
   })
+    // add event listener for mousemove to update the position of the tooltip as you move your mouse around while hovering over a bar
   .on("mousemove", function(event) {
     positionTooltip(event)
   })
+  // add event listener for mouseout to hide the tooltip when you stop hovering over a bar and reset the opacity of the bar back to 0.7
   .on("mouseout", function(event, d) {
     d3.select(this)
       .attr("opacity", 0.7)
@@ -227,13 +245,17 @@ d3.selectAll([...mdBars.nodes(), ...usBars.nodes()])
 
 // 7. ANNOTATIONS   *******************************
 // Based on this custom annotations library: https://d3-annotation.susielu.com/
+// annotation to highlight Ross Perot's performance in Maryland in 1992
 const annotations = [
+  // "note" is the text box that appears with the annotation 
   {
     note: {
       title: "Ross Perot",
       label: "won over 14% of the Maryland vote as an independent candidate in 1992.",
       wrap: 400,  // size
 
+  // "connector" is the line that connects the note to the specific point on the chart that it's referring to
+  // in this case we want a horizontal line that points to the bar for Maryland in 1992, so we set the type to "line" and the lineType to "horizontal"
     },
     connector: {
       end: "none",        
@@ -242,25 +264,35 @@ const annotations = [
       lineType : "horizontal"
     },
     color: mdColor,
+    // "x" and "y" are the coordinates for the point on the chart that the annotation is referring to, which in this case is the top of the bar for Maryland in 1992
     x: xScale(1992) + xScale.bandwidth() / 2,
+    // data[0] corresponds to the first row of our data, which is the election year 1992
+    // this gives us the top of the bar for Maryland in 1992
     y: yScale(data[0].p_share_md),
+    // "dx" and "dy" are the offsets for the note, which is the text box that appears with the annotation
     dy: 0,
     dx: 100
   }
 ]
-  
+
+// create the annotation generator using the d3-svg-annotation library and pass in our annotations array that we just defined, which contains the information for the annotation we want to create
 const makeAnnotations = annotation()
   .annotations(annotations)
-    
+
+// we append a group element to the chart for the annotations and call the annotation generator to create the annotation
+// we need a group element to hold the annotation because the annotation generator creates multiple elements (like the note and the connector) and we want to group them together so we can style and position them as a single unit
 chart.append("g")
   .call(makeAnnotations)
   .attr("z-index", "-1")
 
 // 8. LEGEND  *******************************
+// create a legend by first appending a group element to the SVG 
 const legend = svg.append("g")
   .classed("legend", true)
+  // we position the legend in the top left corner of the SVG by translating it to (0, 0)
   .attr("transform", `translate(0, 0)`)
 
+// we add a rectangle and text for each item in the legend, using the same colors as the bars in the chart to indicate which color corresponds to which geography
 legend.append("rect")
   .attr("x", 0)
   .attr("y", 0)
@@ -268,11 +300,14 @@ legend.append("rect")
   .attr("height", 15)
   .attr("fill", mdColor)
 
+// we position the text for the Maryland item in the legend to the right of the rectangle, with a small gap in between
 legend.append("text")
   .attr("x", 25)
   .attr("y", 12)
   .text("Maryland")
 
+// we then add a rectangle (well, a square) and text for the U.S. item in the legend, positioning it to the right of the Maryland item with some space in between
+// we figure out the values for the x position of the U.S. item in the legend by looking at the width of the Maryland rectangle (15) and the gap between the rectangle and text (10) and the width of the Maryland text (which we can estimate to be around 80 based on how it looks), so we add those together to get the x position for the U.S. rectangle, which is 110
 legend.append("rect")
   .attr("x", 110)
   .attr("y", 0)
@@ -280,6 +315,7 @@ legend.append("rect")
   .attr("height", 15)
   .attr("fill", usColor)
 
+// we position the text for the U.S. item in the legend to the right of the rectangle, with a small gap in between
 legend.append("text")
   .attr("x", 135)
   .attr("y", 12)
